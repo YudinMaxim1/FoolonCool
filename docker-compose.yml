@@ -1,0 +1,10 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: durak_na_grani
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./build:/var/www
+      - ./nginx.conf:/etc/nginx/nginx.conf

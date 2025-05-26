@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дурак на грани</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="mainMenu">
+        <h1 id="gameTitle">Дурак на Грани</h1>
+        <button id="startButton">Начать игру</button>
+        <button id="shareButton">Поделиться</button>
+    </div>
+    <div id="copyNotification" class="copy-notification">Ссылка скопирована!</div>
+
+    <div id="gameContainer">
+
+        <div class="deck-container">
+            <img id="deck-image" src="" alt="Колода" class="deck-image">
+            <div class="deck-count">Карт в колоде: <span id="deck-count">30</span></div>
+        </div>
+
+        <div class="hand">
+
+        </div>
+
+        <div class="bot-deck-container">
+            <img id="bot-deck-image" src="" alt="Колода бота" class="deck-image">
+            <div class="deck-count">Карт у бота: <span id="bot-deck-count">0</span></div>
+        </div>
+
+        <div class="bot-hand">
+
+        </div>
+
+        <div class="table">
+
+        </div>
+
+        <div class="end-turn-button">
+            <button id="end-turn-btn">Завершить ход</button>
+        </div>
+
+
+        <div class="jokers-panel">
+            <div class="jokers-container">
+
+            </div>
+        </div>
+
+        <div class="discard-container">
+            <img id="discard-pile" src="" alt="Сброс" class="deck-image">
+            <div class="deck-count">Карт в сбросе: <span id="discard-count">0</span></div>
+        </div>
+
+        <div id="trump-info" class="trump-info">
+            <div>Козырь: <span id="trump-suit"></span></div>
+            <div class="money-info">Деньги: $<span id="money-amount">10</span></div>
+        </div>
+
+        <div class="special-deck-container">
+            <img id="special-deck-image" src="images/deck.png" alt="Особая колода" class="deck-image">
+            <div class="deck-count">Карт в особой колоде: <span id="special-deck-count">0</span></div>
+        </div>
+
+        <div id="special-deck-modal" class="modal deck-modal">
+            <div class="modal-content">
+                <span class="close-special">&times;</span>
+                <h3>Особая колода</h3>
+                <div class="cards-container special-cards"></div>
+            </div>
+        </div>
+
+
+        <div id="discard-modal" class="modal deck-modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Карты в сбросе</h3>
+                <div class="discard-viewer">
+                    <button class="scroll-btn left">&lt;</button>
+                    <div class="cards-container"></div>
+                    <button class="scroll-btn right">&gt;</button>
+                </div>
+                <div class="discard-counter">1/0</div>
+            </div>
+        </div>
+
+        <div id="deck-modal" class="modal deck-modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Карты в вашей колоде</h3>
+                <div class="deck-viewer">
+                    <button class="scroll-btn left">&lt;</button>
+                    <div class="cards-container"></div>
+                    <button class="scroll-btn right">&gt;</button>
+                </div>
+                <div class="deck-counter">1/0</div>
+            </div>
+        </div>
+
+        <div id="shopModal" class="modal">
+            <div class="modal-content shop-content">
+                <span class="close-shop">&times;</span>
+                <div class="shop-money">
+                    Баланс: $<span id="shop-money-amount">10</span>
+                </div>
+                <div class="shop-row_common">
+                </div>
+                <div class="shop-row_special">
+                    <!-- Временно убрано, верну позже -->
+                </div>
+                <div class="shop-row_jokers">
+                    <!-- Джокеры. Нужно сделать -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
