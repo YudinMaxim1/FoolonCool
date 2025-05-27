@@ -7,4 +7,7 @@ services:
       - "80:80"
     volumes:
       - ./build:/var/www/html
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ca.crt:/etc/ssl/ca.crt
+      - ./nginx/durak-na-grani.crt:/etc/ssl/durak-na-grani.crt
+      - ./nginx/durak-na-grani.key:/etc/ssl/durak-na-grani.key
