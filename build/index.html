@@ -19,7 +19,188 @@
     <div id="helpModal" class="modal">
         <div class="modal-content help-modal-content">
             <button class="close-help" title="Закрыть">×</button>
-            <p>ПИШИ ТУТ</p>
+            <div class="rules-container">
+                <h1>Правила игры "Дурак на грани"</h1>
+                <p class="subtitle">Модификация классического "Дурака" с особыми картами, материалами, печатями и джокерами</p>
+
+                <div class="section">
+                    <h2>1. Основные правила</h2>
+                    <div class="subsection">
+                        <h3>Цель игры</h3>
+                        <ul>
+                            <li>Первым избавиться от <strong>всех карт основной колоды (36 шт.)</strong> в <strong>5 партиях</strong>.</li>
+                            <li><strong>Особая колода</strong> не учитывается в подсчёте карт для победы.</li>
+                        </ul>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Ход игры</h3>
+                        <ul>
+                            <li>Каждый игрок начинает с <strong>6 картами</strong> в руке.</li>
+                            <li>
+                                В свой ход можно:
+                                <ul>
+                                    <li>Выложить <strong>до 6 карт</strong> (можно больше, если у противника >6 карт и используются особые эффекты).</li>
+                                    <li>Бот отбивается картами той же масти или козырями.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Исход хода</strong>:
+                                <ul>
+                                    <li><strong>Бот не отбил все карты</strong> → забирает их себе, игрок добирает до 6.</li>
+                                    <li><strong>Бот отбился</strong> → карты уходят в сброс, оба добирают до 6, ход переходит боту.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Особые карты</h3>
+                        <ul>
+                            <li>Можно брать <strong>в любой момент</strong> (даже если рука >6).</li>
+                            <li>
+                                Имеют <strong>два эффекта</strong>:
+                                <ul>
+                                    <li><strong>Печать</strong> – срабатывает при розыгрыше.</li>
+                                    <li><strong>Материал</strong> – срабатывает при отбитии/сбросе.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>2. Печати (эффекты при розыгрыше)</h2>
+                    <div class="table-container">
+                        <table class="effects-table">
+                            <thead>
+                                <tr>
+                                    <th>Печать</th>
+                                    <th>Эффект</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Голограмма</strong></td><td>Меняет масть карты на <strong>козырную</strong>.</td></tr>
+                                <tr><td><strong>Чёрная</strong></td><td>Отменяет <strong>все эффекты карт и джокеров</strong> на этот ход.</td></tr>
+                                <tr><td><strong>Золотая</strong></td><td>Немедленно даёт <strong>5$</strong>.</td></tr>
+                                <tr><td><strong>Волшебная</strong></td><td>Позволяет положить <strong>любую другую карту</strong> вместо этой.</td></tr>
+                                <tr><td><strong>Дрожащая</strong></td><td>Включает режим <strong>"Переводного Дурака"</strong> (можно переводить карты).</td></tr>
+                                <tr><td><strong>Проклятая</strong></td><td>Заменяет <strong>случайную карту в колоде</strong> на случайную особую.</td></tr>
+                                <tr><td><strong>Бледная</strong></td><td><strong>Уничтожает</strong> случайную карту в колоде.</td></tr>
+                                <tr><td><strong>Огненная</strong></td><td><strong>Сжигает 2 карты</strong> в руке.</td></tr>
+                                <tr><td><strong>Белая</strong></td><td>Может отбить <strong>любую карту</strong> (игнорирует масть/номинал).</td></tr>
+                                <tr><td><strong>Счастливая</strong></td><td><strong>1к5</strong> → 10$; <strong>1к5</strong> → карта становится козырем; <strong>1к10</strong> → меняет материал (шёлк/сталь/золото).</td></tr>
+                                <tr><td><strong>Смешная</strong></td><td>Добавляет <strong>эффект случайного джокера</strong> на следующий ход.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>3. Материалы (эффекты при отбитии/сбросе)</h2>
+                    <div class="table-container">
+                        <table class="effects-table">
+                            <thead>
+                                <tr>
+                                    <th>Материал</th>
+                                    <th>Эффект</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><strong>Золотая</strong></td><td>Даёт <strong>1$</strong> при отбитии (бот) или сбросе (игрок).</td></tr>
+                                <tr><td><strong>Шелковая</strong></td><td><strong>Должна быть отбита первой</strong> (если их несколько – случайно).</td></tr>
+                                <tr><td><strong>Стальная</strong></td><td><strong>Должна быть отбита последней</strong> (если их несколько – случайно).</td></tr>
+                                <tr><td><strong>Голографическая</strong></td><td>При отбитии <strong>добавляет свою копию</strong> в руку.</td></tr>
+                                <tr><td><strong>Хрустальная</strong></td><td>Можно отбить <strong>только +1 номиналом</strong>. <strong>1к4</strong> – ломается при отбитии.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>4. Джокеры (глобальные или одноразовые эффекты)</h2>
+                    <div class="subsection">
+                        <h3>Одноразовые (исчезают после активации)</h3>
+                        <div class="table-container">
+                            <table class="effects-table">
+                                <thead>
+                                    <tr>
+                                        <th>Джокер</th>
+                                        <th>Эффект</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Червонный/Трефовый/Бубновый/Пиковый</strong></td><td>Меняет все карты в руке на эту масть (<strong>раз в 3 хода</strong>).</td></tr>
+                                    <tr><td><strong>Червонолюб/Трефолюб/Бубнолюб/Пиколюб</strong></td><td>Меняет <strong>козырную масть</strong> на выбранную.</td></tr>
+                                    <tr><td><strong>Разбитый</strong></td><td>Все карты на столе становятся <strong>хрустальными</strong>.</td></tr>
+                                    <tr><td><strong>Философский</strong></td><td>Все карты на столе становятся <strong>золотыми</strong>.</td></tr>
+                                    <tr><td><strong>Цельнометаллический</strong></td><td>Все карты на столе становятся <strong>стальными</strong>.</td></tr>
+                                    <tr><td><strong>Купец</strong></td><td>Все карты на столе становятся <strong>шёлковыми</strong>.</td></tr>
+                                    <tr><td><strong>Расточитель</strong></td><td>Увеличивает <strong>размер руки на 2</strong>.</td></tr>
+                                    <tr><td><strong>Скряга</strong></td><td>Уменьшает <strong>размер руки на 2</strong>.</td></tr>
+                                    <tr><td><strong>Реконд</strong></td><td>Перетасовывает <strong>карты игроков</strong>.</td></tr>
+                                    <tr><td><strong>апоЖ</strong></td><td>Перетасовывает <strong>обычную и особую колоды</strong>.</td></tr>
+                                    <tr><td><strong>Цедзип</strong></td><td>Перетасовывает <strong>все колоды (оба игрока)</strong>.</td></tr>
+                                    <tr><td><strong>Растеряха</strong></td><td>Оба игрока <strong>сбрасывают все обычные карты</strong> из рук.</td></tr>
+                                    <tr><td><strong>Балбес</strong></td><td>Оба игрока <strong>сбрасывают все особые карты</strong> из рук.</td></tr>
+                                    <tr><td><strong>Бизнесмен</strong></td><td>Открывает <strong>магазин с 3 случайными джокерами</strong> (можно купить за $).</td></tr>
+                                    <tr><td><strong>Торгаш</strong></td><td>Позволяет <strong>продать 1 карту</strong> со стола/руки.</td></tr>
+                                    <tr><td><strong>Флеш-рояль</strong></td><td><strong>Сжигает всю колоду</strong>, оставляя только <strong>Т-К-Д-В-10 одной масти</strong> (1 за игру).</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Действуют всю партию</h3>
+                        <div class="table-container">
+                            <table class="effects-table">
+                                <thead>
+                                    <tr>
+                                        <th>Джокер</th>
+                                        <th>Эффект</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Жадина</strong></td><td>Даёт <strong>1$ за каждую подобранную</strong> карту (со стола).</td></tr>
+                                    <tr><td><strong>Революционер</strong></td><td><strong>Убирает козырь</strong> из игры (игра без козырей).</td></tr>
+                                    <tr><td><strong>Танц-пол</strong></td><td>Каждая разыгранная карта <strong>меняет масть всех карт</strong> на столе и в руке.</td></tr>
+                                    <tr><td><strong>Любвеобильный</strong></td><td>Каждая подобранная карта становится <strong>особенной</strong>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>5. Важные механики и уточнения</h2>
+                    <div class="subsection">
+                        <h3>Особые карты</h3>
+                        <ul>
+                            <li>Можно брать <strong>в любой момент</strong>, даже если рука >6.</li>
+                            <li>Если тянете карту при <strong>руке ≥6</strong>, можно взять <strong>только особую</strong> (не основную).</li>
+                        </ul>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Джокеры</h3>
+                        <ul>
+                            <li>Максимум <strong>3 джокера</strong> у игрока.</li>
+                            <li><strong>Чёрная печать</strong> временно отменяет их эффекты.</li>
+                            <li>Некоторые джокеры (<strong>Революционер, Танц-пол</strong>) меняют правила <strong>на всю партию</strong>.</li>
+                        </ul>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>Пример взаимодействий</h3>
+                        <ol>
+                            <li><strong>Хрустальная карта + Чёрная печать</strong> → теряет свой эффект, можно отбить любой картой.</li>
+                            <li><strong>Счастливая печать</strong> → может превратить карту в <strong>золотую/шёлковую/стальную</strong>.</li>
+                            <li><strong>Жадина + Любвеобильный</strong> → забираете карты со стола → получаете <strong>$ + они становятся особыми</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div id="copyNotification" class="copy-notification">Ссылка скопирована!</div>
