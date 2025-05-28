@@ -10,9 +10,17 @@
 
 <body>
     <div id="mainMenu">
+        <button id="helpButton" title="Помощь">?</button>
         <h1 id="gameTitle">Дурак на Грани</h1>
         <button id="startButton">Начать игру</button>
         <button id="shareButton">Поделиться</button>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-modal-content">
+            <button class="close-help" title="Закрыть">×</button>
+            <p>ПИШИ ТУТ</p>
+        </div>
     </div>
     <div id="copyNotification" class="copy-notification">Ссылка скопирована!</div>
 
@@ -40,8 +48,12 @@
 
         </div>
 
-        <div class="end-turn-button">
-            <button id="end-turn-btn">Завершить ход</button>
+        <div class="table-container">
+            <div class="table"></div>
+            <div class="turn-buttons">
+                <button id="take-cards-btn" style="display: none;">ВЗЯТЬ</button>
+                <button id="end-turn-btn" style="display: none;">ЗАВЕРШИТЬ ХОД</button>
+            </div>
         </div>
 
 
@@ -71,6 +83,7 @@
                 <span class="close-special">&times;</span>
                 <h3>Особая колода</h3>
                 <div class="cards-container special-cards"></div>
+                <button id="draw-special-card" class="draw-special-btn">Вынуть карту</button>
             </div>
         </div>
 
@@ -101,6 +114,17 @@
             </div>
         </div>
 
+        <div id="difficultyModal" class="modal">
+            <div class="modal-content">
+                <h2>Выберите сложность бота</h2>
+                <div class="difficulty-buttons">
+                    <button id="easy-bot">Легкий бот</button>
+                    <button id="medium-bot">Средний бот</button>
+                    <button id="hard-bot">Сложный бот</button>
+                </div>
+            </div>
+        </div>
+
         <div id="shopModal" class="modal">
             <div class="modal-content shop-content">
                 <span class="close-shop">&times;</span>
@@ -110,11 +134,33 @@
                 <div class="shop-row_common">
                 </div>
                 <div class="shop-row_special">
-                    <!-- Временно убрано, верну позже -->
+
                 </div>
                 <div class="shop-row_jokers">
-                    <!-- Джокеры. Нужно сделать -->
+
                 </div>
+            </div>
+        </div>
+
+        <div id="winModal" class="modal">
+            <div class="modal-content">
+                <h2 style="color: gold; text-align: center;">ПОБЕДА!</h2>
+                <p style="text-align: center;">Вы выиграли эту партию!</p>
+                <button id="continueButton" style="margin: 20px auto; display: block;">ПРОДОЛЖИТЬ</button>
+            </div>
+        </div>
+
+        <div id="loseModal" class="modal">
+            <div class="modal-content">
+                <h2 style="color: red; text-align: center;">ПОРАЖЕНИЕ</h2>
+                <p style="text-align: center;">Бот выиграл эту партию.</p>
+            </div>
+        </div>
+
+        <div id="helpModal" class="modal">
+            <div class="modal-content help-modal-content">
+                <button class="close-help" title="Закрыть">×</button>
+                <p>ПИШИ ТУТ</p>
             </div>
         </div>
 

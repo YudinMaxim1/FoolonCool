@@ -9,18 +9,279 @@ const discardPileElement = document.getElementById('discard-pile');
 const discardCountElement = document.getElementById('discard-count');
 const specialDeckImageElement = document.getElementById('special-deck-image');
 const specialDeckCountElement = document.getElementById('special-deck-count');
+const helpButton = document.getElementById('helpButton');
+const helpModal = document.getElementById('helpModal');
+const closeHelpBtn = helpModal.querySelector('.close-help');
+const winModal = document.getElementById('winModal');
+const loseModal = document.getElementById('loseModal');
+const continueButton = document.getElementById('continueButton');
+
+let deck = []; 
+let playerHand = []; 
+let botDeck = []; 
+let botCards = []; 
+let gameData = {}; 
+let playedCardsThisTurn = []; 
+let discardPile = []; 
+let specialDeck = []; 
+let jokers = []; 
+let money = 10; 
+let isPlayerTurn = true;
+let cardsToDefend = [];
+let tableCards = []; 
+
+helpButton.addEventListener('click', () => {
+    helpModal.style.display = 'block';
+});
+
+closeHelpBtn.addEventListener('click', () => {
+    helpModal.style.display = 'none';
+});
+
+window.addEventListener('click', (event) => {
+    if (event.target === helpModal) {
+        helpModal.style.display = 'none';
+    }
+});
+
+function showWinModal() {
+    isPlayerTurn = false;
+    setPlayerCardsClickable(false);
+    winModal.style.display = 'block';
+}
+
+function showLoseModal() {
+    isPlayerTurn = false;
+    setPlayerCardsClickable(false);
+    loseModal.style.display = 'block';
+}
+
+continueButton.addEventListener('click', function() {
+    winModal.style.display = 'none';
+    restartGame();
+});
+
+function playerDrawCards() {
+    if (playerHand.length >= 6) return; 
+
+    const cardsToDraw = Math.min(6 - playerHand.length, deck.length);
+
+    for (let i = 0; i < cardsToDraw; i++) {
+        const cardData = deck.pop(); 
+        playerHand.push(cardData);  
+        const cardElement = createCard(cardData, false);
+        hand.appendChild(cardElement);
+    }
+    updateCounts(); 
+    logGameState();  
+}
+
+function onPlayerCardClick(card) {
+
+    if (isCardDefendable(card)) {
+
+        moveCardToTable(card);
+    }
+    updateActionButton()
+}
+
+function isCardDefendable(card) {
+    const botCard = getBotCard(); 
+    return (card.rank > botCard.rank || card.suit === botCard.suit);
+}
+
+function moveCardToTable(card) {
+
+    playerHand = playerHand.filter(c => c !== card);
+    tableCards.push(card);
+    updateTableDisplay();
+    updatePlayerHandDisplay();
+    updateActionButton(); 
+}
+
+function removeBotCard() {
+    const botCard = getBotCard(); 
+    botHand = botHand.filter(c => c !== botCard);
 
 
-let deck = []; // Колода игрока (52 карты)
-let playerHand = []; // Карты в руке игрока
-let botDeck = []; // Колода бота (52 карты)
-let botCards = []; // Карты в руке бота
-let gameData = {}; // Данные из JSON
-let playedCardsThisTurn = []; // Карты, выложенные игроком в текущем ходе
-let discardPile = []; // Массив для хранения сброшенных карт
-let specialDeck = []; // Массив особой колоды. Покрытия карт убрано на время, пока не будет реализован простой подкидной Дурак
-let jokers = []; // Массив для хранения джокеров
-let money = 10; // Начальная сумма денег
+    updateBotHandDisplay();
+}
+
+function moveCardsToDiscard() {
+    discardPile.push(...tableCards);
+    tableCards = []; 
+    updateDiscardDisplay();
+    updateTableDisplay();
+}
+
+function updateTableDisplay() {
+    const tableElement = document.getElementById("table");
+    tableElement.innerHTML = ""; 
+    tableCards.forEach(card => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "card";
+        cardElement.innerText = `${card.rank} of ${card.suit}`;
+        tableElement.appendChild(cardElement);
+    });
+    updateActionButton()
+}
+
+function botDrawCards() {
+
+    if (botCards.length < 6 && botDeck.length > 0) {
+        const cardsToDraw = Math.min(6 - botCards.length, botDeck.length);
+
+
+        botDeckImageElement.classList.add('deck-moving');
+
+
+        botDeckImageElement.addEventListener('animationend', () => {
+            botDeckImageElement.classList.remove('deck-moving');
+        });
+
+
+        for (let i = 0; i < cardsToDraw; i++) {
+            const cardData = botDeck.pop();
+            botCards.push(cardData);
+
+
+            const cardElement = createCard(cardData, true);
+            botHand.appendChild(cardElement);
+
+
+            cardElement.classList.add('card-moving');
+
+   
+            cardElement.addEventListener('animationend', () => {
+                cardElement.classList.remove('card-moving');
+            });
+        }
+
+        updateCounts();
+        logGameState();
+    }
+}
+
+function updateActionButton() {
+    const takeBtn = document.getElementById('take-cards-btn');
+    const endTurnBtn = document.getElementById('end-turn-btn');
+    const tableBotCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    const tablePlayerCards = Array.from(document.querySelectorAll('.table-card[data-origin="player"]'));
+
+    takeBtn.style.display = 'none';
+    endTurnBtn.style.display = 'none';
+
+    if (tableBotCards.length > 0) {
+        const allDefended = tableBotCards.every(card => card.dataset.defended === 'true');
+
+        if (!allDefended) {
+            if (isPlayerTurn) {
+                takeBtn.style.display = 'block';
+                takeBtn.onclick = takeCards;
+            } else {
+                takeBtn.style.display = 'none';
+                endTurnBtn.style.display = 'none';
+            }
+        } else {
+            if (isPlayerTurn) {
+                endTurnBtn.style.display = 'block';
+                endTurnBtn.onclick = endTurn;
+            } else {
+                takeBtn.style.display = 'none';
+                endTurnBtn.style.display = 'none';
+            }
+        }
+    }
+    checkWinConditions();
+}
+
+function takeCards() {
+    const tableCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    tableCards.forEach(card => {
+        const cardData = {
+            suit: card.dataset.suit,
+            rang: card.dataset.rang,
+            src: card.dataset.src
+        };
+        playerHand.push(cardData); 
+        hand.appendChild(createCard(cardData, false));
+        card.remove(); 
+    });
+
+    isPlayerTurn = false;
+    setPlayerCardsClickable(false); 
+    updateCounts();
+    logGameState(); 
+    updateTurnButtonsVisibility(); 
+    setTimeout(botAttack, 1000); 
+
+    checkWinConditions();
+}
+
+function endTurn() {
+    moveCardsToDiscard();
+    playedCardsThisTurn = [];
+    isPlayerTurn = false;
+    setPlayerCardsClickable(false);
+    updateCounts();
+    logGameState();
+    updateActionButton();
+    setTimeout(botAttack, 1000);
+    updateActionButton();
+    playerDrawCards()
+
+    checkWinConditions();
+
+}
+
+function updateTurnButtonsVisibility() {
+    const tableCards = document.querySelectorAll('.table-card');
+    const turnButtons = document.querySelector('.turn-buttons');
+
+    if (tableCards.length > 0) {
+        turnButtons.style.display = 'flex';
+        updateActionButton();
+    } else {
+        turnButtons.style.display = 'none';
+    }
+}
+
+
+function updatePlayerHandDisplay() {
+    hand.innerHTML = ""; 
+    playerHand.forEach(cardData => {
+        const cardElement = createCard(cardData, false);
+        hand.appendChild(cardElement);
+    });
+}
+
+function updateBotHandDisplay() {
+    const botHandElement = document.getElementById("bot-hand"); 
+    botHandElement.innerHTML = ""; 
+    botHand.forEach(card => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "card";
+        cardElement.innerText = `${card.rank} of ${card.suit}`; 
+        botHandElement.appendChild(cardElement);
+    });
+}
+
+
+function updateDiscardDisplay() {
+    const discardElement = document.getElementById("discard-pile"); 
+    discardElement.innerHTML = ""; 
+    discardPile.forEach(card => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "card";
+        cardElement.innerText = `${card.rank} of ${card.suit}`;
+        discardElement.appendChild(cardElement);
+    });
+}
+
+
+function getBotCard() {
+    return botHand[0]; 
+}
 
 
 let currentDiscardPage = 0;
@@ -29,26 +290,45 @@ const CARDS_PER_PAGE = 6;
 let currentDeckPage = 0;
 const DECK_CARDS_PER_PAGE = 6;
 
-
-document.getElementById('startButton').addEventListener('click', async function () {
-
-    document.getElementById('mainMenu').style.display = 'none';
-
-
-    document.getElementById('gameContainer').style.display = 'block';
-
-
-    document.getElementById('shopModal').style.display = 'block';
-
-    try {
-
-        await loadShopCards();
-        updateMoneyDisplay();
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-
+document.getElementById('end-turn-btn').addEventListener('click', () => {
+    if (isPlayerTurn) {
+        endTurn();
     }
 });
+
+
+document.getElementById('take-cards-btn').addEventListener('click', () => {
+    moveAllCardsOnTableToHand();
+
+});
+
+
+
+document.getElementById('startButton').addEventListener('click', async function () {
+    document.getElementById('mainMenu').style.display = 'none';
+    document.getElementById('gameContainer').style.display = 'block';
+    
+    document.getElementById('difficultyModal').style.display = 'block';
+});
+
+document.getElementById('easy-bot').addEventListener('click', function() {
+    document.getElementById('difficultyModal').style.display = 'none';
+    document.getElementById('shopModal').style.display = 'block';
+    loadShopCards();
+});
+
+document.getElementById('medium-bot').addEventListener('click', function() {
+    document.getElementById('difficultyModal').style.display = 'none';
+    document.getElementById('shopModal').style.display = 'block';
+    loadShopCards();
+});
+
+document.getElementById('hard-bot').addEventListener('click', function() {
+    document.getElementById('difficultyModal').style.display = 'none';
+    document.getElementById('shopModal').style.display = 'block';
+    loadShopCards();
+});
+
 
 document.getElementById('shareButton').addEventListener('click', copyGameLink);
 
@@ -71,7 +351,6 @@ document.querySelector('.special-deck-container').addEventListener('click', func
     modal.style.display = 'block';
 });
 
-// Закрытие модалок
 document.querySelectorAll('.close').forEach(btn => {
     btn.addEventListener('click', () => {
         btn.closest('.modal').style.display = 'none';
@@ -124,63 +403,63 @@ function copyGameLink() {
 
 async function loadShopCards() {
     try {
-        const container = document.querySelector('.shop-row_common');
-        container.innerHTML = '<div class="loading">Загрузка карт...</div>';
-        try {
+        const containerCommon = document.querySelector('.shop-row_common');
+        const containerSpecial = document.querySelector('.shop-row_special');
 
-            const container = document.querySelector('.shop-row_common');
-            if (!container) {
-                throw new Error('Shop container not found');
-            }
+        containerCommon.innerHTML = '<div class="loading">Загрузка карт...</div>';
+        containerSpecial.innerHTML = '<div class="loading">Загрузка карт...</div>';
 
+        const response = await fetch('./cards.json?v=' + Date.now());
 
-            const response = await fetch('./cards.json?v=' + Date.now());
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Invalid content type');
-            }
-
-
-            const data = await response.json();
-            if (!data.cards || !Array.isArray(data.cards)) {
-                throw new Error('Invalid JSON structure');
-            }
-
-
-            if (data.cards.length < 6) {
-                throw new Error('Not enough cards in JSON');
-            }
-
-
-            const randomCards = getRandomCards(data.cards, 6);
-            console.log('Selected cards:', randomCards);
-
-            // Проверка DOM перед рендером
-            if (!document.querySelector('.shop-row_common')) {
-                throw new Error('Container destroyed before render');
-            }
-
-
-            container.style.opacity = '0';
-            setTimeout(() => {
-                container.innerHTML = '';
-                displayShopCards(randomCards);
-                container.style.opacity = '1';
-            }, 300);
-
-        } catch (error) {
-            console.error('Full error stack:', error);
-            alert(`Ошибка загрузки магазина: ${error.message}`);
-            // Перезагрузка магазина при ошибке
-            setTimeout(loadShopCards, 2000);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
+        if (!data.cards || !Array.isArray(data.cards)) {
+            throw new Error('Invalid JSON structure');
+        }
+
+        if (data.cards.length < 6) {
+            throw new Error('Not enough cards in JSON');
+        }
+
+        const randomCardsCommon = getRandomCards(data.cards, 6);
+        console.log('Selected common cards:', randomCardsCommon);
+
+        containerCommon.style.opacity = '0';
+        setTimeout(() => {
+            containerCommon.innerHTML = '';
+            displayShopCards(randomCardsCommon, 1); 
+            containerCommon.style.opacity = '1';
+        }, 300);
+
+
+        const randomCardsSpecial = getRandomCards(data.cards, 6);
+        console.log('Selected special cards:', randomCardsSpecial);
+
+        containerSpecial.style.opacity = '0';
+        setTimeout(() => {
+            containerSpecial.innerHTML = '';
+            displayShopCards(randomCardsSpecial, 2); 
+            containerSpecial.style.opacity = '1';
+        }, 300);
+
+
+        const containerJokers = document.querySelector('.shop-row_jokers');
+        containerJokers.innerHTML = '<div class="loading">Загрузка джокеров...</div>';
+
+        const jokers = data.jokers || [];
+
+        setTimeout(() => {
+            containerJokers.innerHTML = '';
+            displayShopJokers(jokers);
+        }, 300);
+
     } catch (error) {
-        container.innerHTML = '<div class="error">Ошибка загрузки магазина</div>';
+        console.error('Ошибка загрузки магазина:', error);
+        alert(`Ошибка загрузки магазина: ${error.message}`);
+        setTimeout(loadShopCards, 2000);
     }
 }
 
@@ -194,10 +473,8 @@ function closeShop() {
     document.getElementById('shopModal').style.display = 'none';
 }
 
-
-
-function displayShopCards(cards) {
-    const container = document.querySelector('.shop-row_common');
+function displayShopCards(cards, priceMultiplier) {
+    const container = document.querySelector(priceMultiplier === 1 ? '.shop-row_common' : '.shop-row_special');
     container.innerHTML = '';
 
     cards.forEach((card, index) => {
@@ -208,14 +485,25 @@ function displayShopCards(cards) {
         const img = document.createElement('img');
         img.className = 'shop-card';
         img.src = card.src;
-        img.dataset.price = card.price;
+        img.dataset.price = priceMultiplier === 1 ? card.price : 2;
+
+        // Для специального ряда добавляем случайный тип карты (50% золотая, 50% стеклянная)
+        if (priceMultiplier === 2) {
+            const isGolden = Math.random() < 0.5;
+            if (isGolden) {
+                img.classList.add('golden'); // Добавляем класс для золотых карт
+                img.dataset.cardType = 'golden';
+            } else {
+                img.classList.add('glass'); // Добавляем класс для стеклянных карт
+                img.dataset.cardType = 'glass';
+            }
+        }
 
         const price = document.createElement('div');
         price.className = 'shop-card-price';
-        price.textContent = `${img.dataset.price}$`;
+        price.textContent = `${img.dataset.price}$`; 
 
-        // Обработчик покупки
-        img.addEventListener('click', () => purchaseCard(card, img.dataset.price));
+        img.addEventListener('click', () => purchaseCard(card, img.dataset.price, img.dataset.cardType));
 
         cardElement.append(img, price);
         container.appendChild(cardElement);
@@ -224,27 +512,77 @@ function displayShopCards(cards) {
     console.log('Cards displayed:', cards.length);
 }
 
-function purchaseCard(card, price) {
+function displayShopJokers(jokers) {
+    const container = document.querySelector('.shop-row_jokers');
+    container.innerHTML = '';
+
+    jokers.forEach((joker, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'shop-card-container';
+        cardElement.dataset.index = index;
+
+        const img = document.createElement('img');
+        img.className = 'shop-card joker-card';
+        img.src = joker.src;
+        img.dataset.price = 3;
+        img.dataset.jokerId = joker.id;
+
+        const price = document.createElement('div');
+        price.className = 'shop-card-price';
+        price.textContent = '3$';
+
+        img.addEventListener('click', () => purchaseJoker(joker));
+
+        cardElement.append(img, price);
+        container.appendChild(cardElement);
+    });
+
+    console.log('Jokers displayed:', jokers.length);
+}
+
+function purchaseCard(card, price, cardType) {
+    price = parseInt(price, 10);
+
     if (money >= price) {
         money -= price;
 
-
-        specialDeck = [...specialDeck, card];
-
+        const purchasedCard = { ...card, cardType };
+        specialDeck = [...specialDeck, purchasedCard];
 
         updateMoneyDisplay();
         updateSpecialDeckDisplay();
-
 
         const cardElement = event.target.closest('.shop-card-container');
         cardElement.style.transform = 'scale(0)';
         setTimeout(() => cardElement.remove(), 300);
 
-
         document.querySelector('.shop-row_common').style.justifyContent = 'flex-start';
         setTimeout(() => {
             document.querySelector('.shop-row_common').style.justifyContent = 'center';
         }, 50);
+    } else {
+        alert('Недостаточно средств!');
+    }
+}
+
+function purchaseJoker(joker) {
+    if (money >= 3) {
+        money -= 3;
+
+        jokers.push(joker);
+        initJokersPanel();
+
+        updateMoneyDisplay();
+
+        const container = document.querySelector('.shop-row_jokers');
+        const cardElements = container.querySelectorAll('.shop-card-container');
+        cardElements.forEach(el => {
+            const img = el.querySelector('img');
+            if (parseInt(img.dataset.jokerId, 10) === joker.id) {
+                el.style.transform = 'scale(0)';
+                setTimeout(() => el.remove(), 300);
+            }
+        });
     } else {
         alert('Недостаточно средств!');
     }
@@ -320,7 +658,7 @@ function initGame() {
     specialDeckImageElement.src = gameData.cardBack;
     specialDeckCountElement.textContent = '0';
 
-
+    isPlayerTurn = true;
     dealInitialCards(6);
     updateCounts();
     initDiscardModal();
@@ -328,6 +666,32 @@ function initGame() {
     initSpecialDeckModal();
     logGameState();
     initJokersPanel();
+}
+
+function checkWinConditions() {
+    // Проверяем победу игрока (у бота нет карт в руке и колоде)
+    if (botCards.length === 0 && botDeck.length === 0) {
+        showLoseModal();
+        return true;
+    }
+
+    // Проверяем победу бота (у игрока нет карт в руке и колоде)
+    if (playerHand.length === 0 && deck.length === 0) {
+        showWinModal();
+        return true;
+    }
+
+    // Если у игрока нет карт, но есть карты в колоде - добираем
+    if (playerHand.length === 0 && deck.length > 0) {
+        playerDrawCards();
+    }
+
+    // Если у бота нет карт, но есть карты в колоде - добираем
+    if (botCards.length === 0 && botDeck.length > 0) {
+        botDrawCards();
+    }
+
+    return false;
 }
 
 
@@ -353,46 +717,31 @@ function drawFromSpecialDeck() {
     return null;
 }
 
+function drawFromSpecialDeckToHand() {
+    if (specialDeck.length === 0) return;
 
-function initSpecialDeckModal() {
-    const modal = document.createElement('div');
-    modal.id = 'special-deck-modal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Карты в особой колоде</h3>
-            <div class="cards-container"></div>
-            <div class="deck-counter">Карт: 0</div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+    const randomIndex = Math.floor(Math.random() * specialDeck.length);
+    const cardData = specialDeck[randomIndex];
 
-    specialDeckImageElement.addEventListener('click', () => {
-        if (specialDeck.length > 0) {
-            showSpecialDeckModal();
-        }
-    });
+    specialDeck.splice(randomIndex, 1);
 
-    modal.querySelector('.close').addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
+    playerHand.push(cardData);
+    hand.appendChild(createCard(cardData, false));
+
+    updateCounts();
+    updateSpecialDeckDisplay();
+
+    if (document.getElementById('special-deck-modal').style.display === 'block') {
+        showSpecialDeckModal();
+    }
+
+    logGameState();
 }
 
-
 function initSpecialDeckModal() {
-    const modal = document.createElement('div');
-    modal.id = 'special-deck-modal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Карты в особой колоде</h3>
-            <div class="cards-container"></div>
-            <div class="deck-counter">Карт: 0</div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+    const modal = document.getElementById('special-deck-modal');
+    const closeBtn = modal.querySelector('.close-special');
+    const drawBtn = modal.querySelector('#draw-special-card');
 
     specialDeckImageElement.addEventListener('click', () => {
         if (specialDeck.length > 0) {
@@ -400,26 +749,41 @@ function initSpecialDeckModal() {
         }
     });
 
-    modal.querySelector('.close').addEventListener('click', () => {
+    closeBtn.addEventListener('click', () => {
         modal.style.display = 'none';
     });
+
+    drawBtn.addEventListener('click', () => {
+        drawFromSpecialDeckToHand();
+    });
+
+    document.body.appendChild(modal);
 }
 
 function showSpecialDeckModal() {
     const modal = document.getElementById('special-deck-modal');
-    const container = modal.querySelector('.cards-container');
+    const container = modal.querySelector('.special-cards');
+    const drawBtn = modal.querySelector('#draw-special-card');
     const counter = modal.querySelector('.deck-counter');
 
     container.innerHTML = '';
 
     specialDeck.forEach(cardData => {
         const card = document.createElement('img');
-        card.src = gameData.cardBack;
+        card.src = cardData.src;
         card.alt = `Карта: ${cardData.suit} ${cardData.rang}`;
         card.classList.add('card-in-deck');
+
+        if (cardData.cardType === 'golden') {
+            card.classList.add('golden'); 
+        } else if (cardData.cardType === 'glass') {
+            card.classList.add('glass'); 
+        }
+
         container.appendChild(card);
     });
 
+    drawBtn.disabled = specialDeck.length === 0;
     counter.textContent = `Карт: ${specialDeck.length}`;
     modal.style.display = 'block';
 }
@@ -429,7 +793,7 @@ function updateSpecialDeckDisplay() {
     if (container) container.textContent = specialDeck.length;
 }
 
-// Раздача начальных карт
+
 function dealInitialCards(count) {
     // Игроку
     playerHand = deck.splice(0, count).map(c => ({ ...c }));
@@ -444,7 +808,6 @@ function dealInitialCards(count) {
     });
 }
 
-// Создание карты (isBot = true для карт бота)
 function createCard(cardData, isBot) {
     const card = document.createElement('img');
 
@@ -456,50 +819,110 @@ function createCard(cardData, isBot) {
         card.src = cardData.src;
         card.classList.add('card');
         card.addEventListener('click', () => playCard(card));
-    }
 
+        if (cardData.cardType === 'golden') {
+            card.classList.add('golden');
+        } else if (cardData.cardType === 'glass') {
+            card.classList.add('glass');
+        }
+    }
 
     card.alt = `Карта: ${cardData.suit} ${cardData.rang}`;
     card.dataset.suit = cardData.suit;
     card.dataset.rang = cardData.rang;
     card.dataset.src = cardData.src;
+    if (cardData.cardType) {
+        card.dataset.cardType = cardData.cardType;
+    }
 
     return card;
 }
 
+function canAddCardToTable(card) {
+    const botCards = tableCards.filter(c => c.owner === 'bot');
+    const playerCards = tableCards.filter(c => c.owner === 'player');
+
+    if (playerCards.length >= botCards.length) {
+        return false; 
+    }
+
+    for (const botCard of botCards) {
+        const isDefended = playerCards.some(pc => pc.defends === botCard.id);
+        if (!isDefended && canDefendCard(card, botCard)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function onPlayerCardClick(card) {
+    if (canAddCardToTable(card)) {
+        moveCardToTable(card);
+    }
+}
+
 
 function playCard(card) {
+    if (!isPlayerTurn) {
+        alert("Сейчас ход бота!");
+        return;
+    }
+
+    if (card.dataset.cardType === 'golden') {
+        money += 1;
+        alert("Золотая карта атакует!/n + 1$");
+        updateMoneyDisplay();
+    }
+
     const cardRank = card.dataset.rang;
     const cardSuit = card.dataset.suit;
-
 
     if (playedCardsThisTurn.length === 0) {
         addCardToTable(card);
         playedCardsThisTurn.push({
             rang: cardRank,
             suit: cardSuit,
-            src: card.dataset.src
+            src: card.dataset.src,
+            cardType: card.dataset.cardType
         });
-        updateEndTurnButtonVisibility();
+        updateTurnButtonsVisibility();
         return;
     }
 
-
     const canAdd = playedCardsThisTurn.some(playedCard =>
-        playedCard.rang === cardRank ||
-        (cardSuit === trumpSuit && playedCard.suit === trumpSuit)
-    );
+        playedCard.rang === cardRank);
 
     if (canAdd && table.children.length < 6) {
         addCardToTable(card);
         playedCardsThisTurn.push({
             rang: cardRank,
             suit: cardSuit,
-            src: card.dataset.src
+            src: card.dataset.src,
+            cardType: card.dataset.cardType
         });
-        updateEndTurnButtonVisibility();
-    } else {
+        updateTurnButtonsVisibility();
+    }
+}
+
+function TurnAlert() {
+    if (isPlayerTurn) {
         alert('Можно выложить:\n- Карты того же ранга\n');
+    }
+}
+
+function updateTurnButtonsVisibility() {
+    const tableCards = document.querySelectorAll('.table-card');
+    const turnButtons = document.querySelector('.turn-buttons');
+    const takeBtn = document.getElementById('take-cards-btn');
+    const endTurnBtn = document.getElementById('end-turn-btn');
+
+    if (tableCards.length > 0) {
+        turnButtons.style.display = 'flex';
+
+        takeBtn.style.display = !isPlayerTurn ? 'block' : 'none';
+        endTurnBtn.style.display = isPlayerTurn ? 'block' : 'none';
+    } else {
+        turnButtons.style.display = 'none';
     }
 }
 
@@ -537,14 +960,12 @@ function initDeckModal() {
     });
 }
 
-
 function showDeckModal() {
     const modal = document.getElementById('deck-modal');
     currentDeckPage = 0;
     updateDeckView();
     modal.style.display = 'block';
 }
-
 
 function updateDeckView() {
     const modal = document.getElementById('deck-modal');
@@ -553,11 +974,10 @@ function updateDeckView() {
 
     container.innerHTML = '';
 
-    // Полный набор карт для сортированного отображения
     const allRanks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
     const allSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
 
-    // Сортировка карт в колоде по масти и рангу
+
     const sortedDeck = [...deck].sort((a, b) => {
         if (a.suit !== b.suit) {
             return allSuits.indexOf(a.suit) - allSuits.indexOf(b.suit);
@@ -614,14 +1034,14 @@ function updateDeckView() {
     modal.querySelector('.scroll-btn.right').style.display = 'none';
 }
 
-
-
 function addCardToTable(card) {
     const newCard = card.cloneNode(true);
     newCard.classList.add('table-card');
-    table.appendChild(newCard);
-    card.remove();
 
+
+    table.insertBefore(newCard, table.firstChild);
+
+    card.remove();
 
     const cardIndex = playerHand.findIndex(c =>
         c.suit === card.dataset.suit && c.rang === card.dataset.rang
@@ -632,16 +1052,15 @@ function addCardToTable(card) {
 
     logGameState();
     updateDeckCounts();
+
+    // Прокрутка к новой карте (опционально)
+    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-
-
-
 
 function updateDeckCounts() {
     deckCountElement.textContent = deck.length;
     botDeckCountElement.textContent = botDeck.length;
 }
-
 
 function shuffleArray(array) {
     const newArray = [...array];
@@ -653,27 +1072,24 @@ function shuffleArray(array) {
 }
 
 function canBeat(attackingCard, defendingCard) {
-    // Если защищающая карта - козырь, а атакующая - нет
     if (defendingCard.suit === trumpSuit && attackingCard.suit !== trumpSuit) {
         return true;
     }
-    // Если обе карты козырные
     if (defendingCard.suit === trumpSuit && attackingCard.suit === trumpSuit) {
-        const ranks = ['6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
         const attackRankIndex = ranks.indexOf(attackingCard.rang);
         const defendRankIndex = ranks.indexOf(defendingCard.rang);
         return defendRankIndex > attackRankIndex;
     }
-    // Если масти совпадают (не козырные)
+
     if (defendingCard.suit === attackingCard.suit) {
-        const ranks = ['6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace'];
         const attackRankIndex = ranks.indexOf(attackingCard.rang);
         const defendRankIndex = ranks.indexOf(defendingCard.rang);
         return defendRankIndex > attackRankIndex;
     }
     return false;
 }
-
 
 function updateEndTurnButtonVisibility() {
     requestAnimationFrame(() => {
@@ -688,19 +1104,40 @@ function updateEndTurnButtonVisibility() {
     });
 }
 
+function takeCards() {
+    const tableCards = Array.from(document.querySelectorAll('.table-card'));
+    tableCards.forEach(card => {
+        const cardData = {
+            suit: card.dataset.suit,
+            rang: card.dataset.rang,
+            src: card.dataset.src
+        };
+        playerHand.push(cardData);
+        hand.appendChild(createCard(cardData, false));
+        card.remove();
+    });
 
+    playedCardsThisTurn = [];
+    // После взятия карт ход переходит боту
+    isPlayerTurn = false;
+    setPlayerCardsClickable(false);
+    updateCounts();
+    logGameState();
+    updateTurnButtonsVisibility();
+    updateActionButton();
+    playerDrawCards()
+    setTimeout(botAttack, 1000);
+}
 
 // Запуск игры. !!До инициализации бота!!
 loadGame();
 
-
 document.getElementById('end-turn-btn').addEventListener('click', () => {
-    botTurn();
+    botDefend();
     playedCardsThisTurn = [];
 });
 
-//Переделать!
-function botTurn() {
+function botDefend() {
     const tableCards = Array.from(document.querySelectorAll('.table-card'));
     let success = true;
     let cardsToDiscard = [];
@@ -712,29 +1149,46 @@ function botTurn() {
             src: tableCardEl.dataset.src
         };
 
-        const defenseCardIndex = botCards.findIndex(botCard => canBeat(attackCard, botCard));
-
-        if (defenseCardIndex !== -1) {
-            const defenseCard = botCards[defenseCardIndex];
-            cardsToDiscard.push(attackCard, defenseCard);
-
-
-            const botCardEl = botHand.children[defenseCardIndex];
-            const newCard = botCardEl.cloneNode(true);
-            newCard.classList.add('table-card');
-            table.appendChild(newCard);
-
-
-            botCards.splice(defenseCardIndex, 1);
-            botCardEl.remove();
-        } else {
+        const canDefend = botCards.some(botCard => canBeat(attackCard, botCard));
+        if (!canDefend) {
             success = false;
             break;
         }
     }
 
-    if (!success) {
 
+    if (success) {
+        for (let tableCardEl of tableCards) {
+            const attackCard = {
+                suit: tableCardEl.dataset.suit,
+                rang: tableCardEl.dataset.rang,
+                src: tableCardEl.dataset.src
+            };
+
+            const defenseCardIndex = botCards.findIndex(botCard => canBeat(attackCard, botCard));
+            if (defenseCardIndex !== -1) {
+                const defenseCard = botCards[defenseCardIndex];
+                cardsToDiscard.push(attackCard, defenseCard);
+
+                const botCardEl = botHand.children[defenseCardIndex];
+                const newCard = botCardEl.cloneNode(true);
+                newCard.classList.add('table-card');
+                table.appendChild(newCard);
+
+                botCards.splice(defenseCardIndex, 1);
+                botCardEl.remove();
+            }
+        }
+
+        discardPile.push(...cardsToDiscard);
+        updateDiscardPileVisual();
+
+        const tableCardElements = document.querySelectorAll('.table-card');
+        tableCardElements.forEach(card => card.remove());
+
+        isPlayerTurn = false;
+        setTimeout(botAttack, 1000); 
+    } else {
         tableCards.forEach(card => {
             const cardData = {
                 suit: card.dataset.suit,
@@ -745,40 +1199,338 @@ function botTurn() {
             botHand.appendChild(createCard(cardData, true));
             card.remove();
         });
-    } else {
+
+        isPlayerTurn = true;
+        setPlayerCardsClickable(true);
+        highlightDefendableCards(); 
+    }
+
+    playerDrawCards();
+    botDrawCards();
+    playedCardsThisTurn = [];
+    updateCounts();
+    logGameState();
+    updateTurnButtonsVisibility();
+    updateActionButton();
+    checkWinConditions();
+}
+
+function setPlayerCardsClickable(clickable) {
+    const playerCards = document.querySelectorAll('.hand .card');
+    playerCards.forEach(card => {
+        if (clickable) {
+            card.style.pointerEvents = 'auto';
+            card.style.opacity = '1';
+            card.onclick = () => {
+                if (isPlayerTurn) playCard(card);
+                else if (card.classList.contains('defendable')) {
+                    defendCard(card);
+                }
+            };
+        } else {
+            card.style.pointerEvents = 'none';
+            card.style.opacity = '0.7';
+            card.onclick = null; 
+        }
+    });
+}
+
+function highlightDefendableCards() {
+    const tableCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    const playerCards = document.querySelectorAll('.hand .card');
+
+    playerCards.forEach(card => {
+        card.classList.remove('defendable');
+        card.onclick = null;
+    });
+
+    cardsToDefend = [...tableCards];
+
+    if (tableCards.length === 0) return;
+
+    playerCards.forEach(playerCard => {
+        const playerCardData = {
+            suit: playerCard.dataset.suit,
+            rang: playerCard.dataset.rang
+        };
+
+        const defendableCards = tableCards
+            .filter(botCard => botCard.dataset.defended !== 'true')
+            .map(botCard => ({
+                element: botCard,
+                data: {
+                    suit: botCard.dataset.suit,
+                    rang: botCard.dataset.rang
+                }
+            }))
+            .filter(botCard => canBeat(botCard.data, playerCardData));
+
+        if (defendableCards.length > 0) {
+            playerCard.classList.add('defendable');
+            playerCard.dataset.defendsAgainst = JSON.stringify(
+                defendableCards.map(c => c.element.dataset.rang + c.element.dataset.suit)
+            );
+            playerCard.onclick = () => defendCard(playerCard);
+        }
+    });
+}
+
+function defendCard(card) {
+    const tableCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    const playerCardData = {
+        suit: card.dataset.suit,
+        rang: card.dataset.rang,
+        src: card.dataset.src
+    };
+
+    try {
+        const defendsAgainst = JSON.parse(card.dataset.defendsAgainst || '[]');
+        const botCard = tableCards.find(c =>
+            defendsAgainst.includes(c.dataset.rang + c.dataset.suit) &&
+            c.dataset.defended !== 'true'
+        );
+
+        if (botCard) {
+            const defenseCard = document.createElement('img');
+            defenseCard.src = playerCardData.src;
+            defenseCard.alt = `Карта: ${playerCardData.suit} ${playerCardData.rang}`;
+            defenseCard.classList.add('card', 'table-card', 'defense-card');
+            defenseCard.dataset.suit = playerCardData.suit;
+            defenseCard.dataset.rang = playerCardData.rang;
+            defenseCard.dataset.src = playerCardData.src;
+            defenseCard.dataset.origin = 'player';
+            defenseCard.dataset.defends = botCard.dataset.rang + botCard.dataset.suit;
+
+            const botCardRect = botCard.getBoundingClientRect();
+            const tableRect = table.getBoundingClientRect();
+            defenseCard.style.position = 'absolute';
+            defenseCard.style.left = (botCardRect.left - tableRect.left + 15) + 'px';
+            defenseCard.style.top = (botCardRect.top - tableRect.top - 10) + 'px';
+            defenseCard.style.zIndex = '5';
+
+            table.appendChild(defenseCard);
+
+            const cardIndex = playerHand.findIndex(c =>
+                c.suit === playerCardData.suit && c.rang === playerCardData.rang);
+            if (cardIndex !== -1) {
+                playerHand.splice(cardIndex, 1);
+            }
+            card.remove();
+
+            botCard.dataset.defended = 'true';
+        }
+    } catch (e) {
+        console.error('Error processing defend action:', e);
+    }
+
+    checkAllDefended();
+    updateActionButton();
+}
+
+function checkAllDefended() {
+    const tableCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    const allDefended = tableCards.every(card => card.dataset.defended === 'true');
+
+    if (allDefended && tableCards.length > 0) {
+        const cardsToDiscard = [];
+
+        document.querySelectorAll('.table-card').forEach(card => {
+            // Проверяем стеклянные карты (25% шанс удаления)
+            if (card.dataset.cardType === 'glass' && Math.random() < 0.25) {
+                console.log('Стеклянная карта разбилась при сбросе!');
+                return; // Пропускаем добавление в сброс
+            }
+
+            cardsToDiscard.push({
+                suit: card.dataset.suit,
+                rang: card.dataset.rang,
+                src: card.dataset.src,
+                cardType: card.dataset.cardType
+            });
+            card.remove();
+        });
 
         discardPile.push(...cardsToDiscard);
         updateDiscardPileVisual();
 
-
-        const tableCardElements = document.querySelectorAll('.table-card');
-        tableCardElements.forEach(card => card.remove());
+        isPlayerTurn = true;
+        setPlayerCardsClickable(true);
+        highlightDefendableCards();
+        updateTurnButtonsVisibility();
+        playedCardsThisTurn = [];
     }
-
-    playedCardsThisTurn = [];
-    updateCounts();
-    logGameState();
-    updateEndTurnButtonVisibility();
 }
 
+function defendCard(card) {
+    const tableCards = Array.from(document.querySelectorAll('.table-card[data-origin="bot"]'));
+    const playerCardData = {
+        suit: card.dataset.suit,
+        rang: card.dataset.rang,
+        src: card.dataset.src,
+        cardType: card.dataset.cardType
+    };
+
+    try {
+        const defendsAgainst = JSON.parse(card.dataset.defendsAgainst || '[]');
+        const botCard = tableCards.find(c =>
+            defendsAgainst.includes(c.dataset.rang + c.dataset.suit) &&
+            c.dataset.defended !== 'true'
+        );
+
+        if (botCard) {
+            if (card.dataset.cardType === 'glass' && Math.random() < 0.25) {
+                console.log('Стеклянная карта разбилась при отбитии!');
+                alert("Стеклянная карта разбилась при отбитии!");
+                const cardIndex = playerHand.findIndex(c =>
+                    c.suit === playerCardData.suit && c.rang === playerCardData.rang);
+                if (cardIndex !== -1) {
+                    playerHand.splice(cardIndex, 1);
+                }
+                card.remove();
+                checkAllDefended();
+                updateActionButton();
+                return;
+            }
+
+            const defenseCard = document.createElement('img');
+            defenseCard.src = playerCardData.src;
+            defenseCard.alt = `Карта: ${playerCardData.suit} ${playerCardData.rang}`;
+            defenseCard.classList.add('card', 'table-card', 'defense-card');
+            if (playerCardData.cardType === 'golden') defenseCard.classList.add('golden');
+            if (playerCardData.cardType === 'glass') defenseCard.classList.add('glass');
+            defenseCard.dataset.suit = playerCardData.suit;
+            defenseCard.dataset.rang = playerCardData.rang;
+            defenseCard.dataset.src = playerCardData.src;
+            defenseCard.dataset.origin = 'player';
+            defenseCard.dataset.defends = botCard.dataset.rang + botCard.dataset.suit;
+            if (playerCardData.cardType) {
+                defenseCard.dataset.cardType = playerCardData.cardType;
+            }
+
+            const botCardRect = botCard.getBoundingClientRect();
+            const tableRect = table.getBoundingClientRect();
+            defenseCard.style.position = 'absolute';
+            defenseCard.style.left = (botCardRect.left - tableRect.left + 15) + 'px';
+            defenseCard.style.top = (botCardRect.top - tableRect.top - 10) + 'px';
+            defenseCard.style.zIndex = '5';
+
+            table.appendChild(defenseCard);
+
+            const cardIndex = playerHand.findIndex(c =>
+                c.suit === playerCardData.suit && c.rang === playerCardData.rang);
+            if (cardIndex !== -1) {
+                playerHand.splice(cardIndex, 1);
+            }
+            card.remove();
+
+            botCard.dataset.defended = 'true';
+        }
+    } catch (e) {
+        console.error('Error processing defend action:', e);
+    }
+
+    checkAllDefended();
+    updateActionButton();
+}
+
+function botAttack() {
+
+    botDrawCards();
+
+    updateActionButton();
+    if (botCards.length === 0) {
+        isPlayerTurn = true;
+        setPlayerCardsClickable(true);
+        updateTurnButtonsVisibility();
+        return;
+    }
+
+    if (isPlayerTurn === false) {
+        // 1. Собираем статистику по рангам в руке бота
+        const rankStats = {};
+        botCards.forEach(card => {
+            rankStats[card.rang] = (rankStats[card.rang] || 0) + 1;
+        });
+
+        // 2. Выбираем ранг с максимальным количеством карт (минимум 2 карты)
+        let bestRank = '';
+        let maxCount = 1; // Минимум 2 карты одного ранга
+        for (const [rank, count] of Object.entries(rankStats)) {
+            if (count > maxCount) {
+                bestRank = rank;
+                maxCount = count;
+            }
+        }
+
+        let cardsToPlay = [];
+
+        // 3. Если есть ранг с 2+ картами, выбираем все карты этого ранга (но не более 6)
+        if (maxCount >= 2) {
+            cardsToPlay = botCards.filter(card => card.rang === bestRank).slice(0, 6);
+        } else {
+            // 4. Если нет рангов с 2+ картами, выбираем случайную карту
+            const randomCard = botCards[Math.floor(Math.random() * botCards.length)];
+            cardsToPlay = [randomCard];
+        }
+
+        // 5. Выкладываем карты на стол
+        const cardsToRemove = [];
+        cardsToPlay.forEach(cardData => {
+            const cardIndex = botCards.findIndex(c =>
+                c.rang === cardData.rang && c.suit === cardData.suit);
+
+            if (cardIndex !== -1) {
+                const newCard = document.createElement('img');
+                newCard.src = cardData.src;
+                newCard.alt = `Карта: ${cardData.suit} ${cardData.rang}`;
+                newCard.classList.add('card', 'table-card', 'bot-attack-card');
+                newCard.dataset.suit = cardData.suit;
+                newCard.dataset.rang = cardData.rang;
+                newCard.dataset.src = cardData.src;
+                newCard.dataset.origin = 'bot';
+
+                table.appendChild(newCard);
+                cardsToRemove.push(cardIndex);
+                playedCardsThisTurn.push(cardData);
+
+                setTimeout(() => newCard.classList.remove('bot-attack-card'), 500);
+            }
+        });
+
+        // 6. Удаляем карты из руки бота (в обратном порядке, чтобы индексы не сдвигались)
+        cardsToRemove.sort((a, b) => b - a).forEach(index => {
+            botCards.splice(index, 1);
+            botHand.children[index].remove();
+        });
+
+        // 7. Передаем ход игроку для отбития
+        isPlayerTurn = true;
+        setPlayerCardsClickable(true);
+        highlightDefendableCards();
+        updateCounts();
+        logGameState();
+        updateTurnButtonsVisibility();
+        playerDrawCards()
+        updateActionButton();
+        checkWinConditions();
+
+    }
+    checkWinConditions();
+}
 
 function updateDiscardPileVisual() {
-    // Обновляем счетчик
     discardCountElement.textContent = discardPile.length;
 
-    // Показываем верхнюю карту в сбросе
     if (discardPile.length > 0) {
         discardPileElement.src = discardPile[discardPile.length - 1].src;
     } else {
         discardPileElement.src = gameData.cardBack;
     }
 
-    // Принудительно обновляем модальное окно
     if (document.getElementById('discard-modal').style.display === 'block') {
         updateDiscardView();
     }
 }
-
 
 function initDiscardModal() {
     const modal = document.getElementById('discard-modal');
@@ -819,7 +1571,6 @@ function initDiscardModal() {
     });
 }
 
-
 function showDiscardModal() {
     const modal = document.getElementById('discard-modal');
     currentDiscardPage = 0;
@@ -854,34 +1605,97 @@ function updateDiscardView() {
         endIdx < discardPile.length ? 'visible' : 'hidden';
 }
 
-// Функция инициализации панели джокеров
 function initJokersPanel() {
-    //добавление джокеров (агружать из JSON)
-    jokers = [
-
-    ];
-
     const container = document.querySelector('.jokers-container');
-    container.innerHTML = '';
+    container.innerHTML = ''; 
 
     jokers.forEach(joker => {
-        const jokerCard = document.createElement('div');
-        jokerCard.className = 'joker-card';
-        jokerCard.textContent = joker.name;
-        jokerCard.title = joker.effect;
+        const jokerCard = document.createElement('img');
+        jokerCard.className = 'joker-card-panel';
+        jokerCard.src = joker.src;
+        jokerCard.title = `Джокер #${joker.id}`;
+        jokerCard.style.cursor = 'pointer';
+        jokerCard.dataset.jokerId = joker.id;
 
         jokerCard.addEventListener('click', () => useJoker(joker));
         container.appendChild(jokerCard);
     });
+
+    if (jokers.length === 0) {
+        container.style.opacity = '0';
+    } else {
+        container.style.opacity = '1';
+    }
 }
 
-// Функция использования джокера
 function useJoker(joker) {
-    console.log(`Использован джокер: ${joker.name}`);
-    // Здесь можно добавить логику применения эффекта джокера
-    alert(`Активирован эффект: ${joker.effect}`);
+    console.log(`Использован джокер: ${joker.id}`);
 
-    // Удаляем использованный джокер
+    if (playerHand.length === 0) {
+        alert('У вас нет карт в руке для замены.');
+        return;
+    }
+
+    let newSuit = null;
+    switch (joker.id) {
+        case 1:
+            newSuit = 'clubs';    // трефы
+            break;
+        case 2:
+            newSuit = 'spades';   // пики
+            break;
+        case 3:
+            newSuit = 'hearts';   // червы
+            break;
+        case 4:
+            newSuit = 'diamonds'; // бубны
+            break;
+        default:
+            alert(`Джокер с id=${joker.id} пока не реализован.`);
+            return;
+    }
+
+    const newHand = playerHand.map(card => {
+        const newCard = { ...card };
+        newCard.suit = newSuit;
+        const newSrc = gameData.cards.find(c =>
+            c.rang === card.rang && c.suit === newSuit)?.src;
+        if (newSrc) {
+            newCard.src = newSrc;
+        }
+        return newCard;
+    });
+
+    playerHand = newHand;
+
+    updatePlayerHandDisplay();
+
+    alert(`Все карты в руке заменены на масть ${newSuit}.`);
+
     jokers = jokers.filter(j => j.id !== joker.id);
+    initJokersPanel(); 
+}
+
+function restartGame() {
+    // Сохраняем важные данные
+    const savedSpecialDeck = [...specialDeck];
+    const savedJokers = [...jokers];
+    const savedMoney = money;
+
+    // Полностью перезагружаем игру
+    initGame();
+
+    // Восстанавливаем сохраненные данные
+    specialDeck = savedSpecialDeck;
+    jokers = savedJokers;
+    money = savedMoney;
+
+    // Обновляем отображение
+    updateSpecialDeckDisplay();
     initJokersPanel();
+    updateMoneyDisplay();
+
+    // Показываем магазин для новой игры
+    document.getElementById('shopModal').style.display = 'block';
+    loadShopCards();
 }
